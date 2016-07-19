@@ -107,7 +107,6 @@ def constructBayesNet(gameState):
         edges.append((FOOD_HOUSE_VAR, obsVar))
         edges.append((GHOST_HOUSE_VAR, obsVar))
 
-    print(edges)
 
     variableDomainsDict[X_POS_VAR] = X_POS_VALS
     variableDomainsDict[Y_POS_VAR] = Y_POS_VALS
