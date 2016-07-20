@@ -101,7 +101,37 @@ def joinFactors(factors):
 
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    setOfUnconditioned = set()
+    setOfConditioned = set()
+    setofVariableDomainDist = dict()
+
+    for factor in factors:
+        setOfConditioned = setOfConditioned | factor.conditionedVariables()
+        setOfUnconditioned = setOfUnconditioned | factor.unconditionedVariables()
+        distVa = factor.variableDomainsDict()
+        setofVariableDomainDist = dict(setofVariableDomainDist, **distVa)
+
+    setOfConditioned = setOfConditioned - (setOfConditioned & setOfUnconditioned)
+    result = Factor(setOfUnconditioned, setOfConditioned, setofVariableDomainDist)
+
+    for assignment in result.getAllPossibleAssignmentDicts():
+        prob = 1
+        for factor in factors:
+            assignmentCopy = dict()
+            for variable in assignment:
+                if (variable in (factor.unconditionedVariables() | factor.conditionedVariables())):
+                    assignmentCopy[variable] = assignment[variable]
+            prob = prob * factor.getProbability(assignmentCopy)
+        result.setProbability(assignment, prob)
+
+    return result
+
+
+        
+
+
+
 
 
 def eliminateWithCallTracking(callTrackingList=None):
@@ -109,7 +139,6 @@ def eliminateWithCallTracking(callTrackingList=None):
     def eliminate(factor, eliminationVariable):
         """
         Question 4: Your eliminate implementation 
-
         Input factor is a single factor.
         Input eliminationVariable is the variable to eliminate from factor.
         eliminationVariable must be an unconditioned variable in factor.
@@ -117,11 +146,9 @@ def eliminateWithCallTracking(callTrackingList=None):
         You should calculate the set of unconditioned variables and conditioned 
         variables for the factor obtained by eliminating the variable
         eliminationVariable.
-
         Return a new factor where all of the rows mentioning
         eliminationVariable are summed with rows that match
         assignments on the other variables.
-
         Useful functions:
         Factor.getAllPossibleAssignmentDicts
         Factor.getProbability
@@ -150,7 +177,24 @@ def eliminateWithCallTracking(callTrackingList=None):
                     "unconditionedVariables: " + str(factor.unconditionedVariables()))
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        print("factor domain is:")
+        print(factor.variableDomainsDict())
+        unCondVar = factor.unconditionedVariables()
+        unCondVar.remove(eliminationVariable)
+        condVar = factor.conditionedVariables()
+        varDomainsDict = factor.variableDomainsDict()
+        result = Factor(unCondVar, condVar, varDomainsDict)
+        
+        for assignmentDict in result.getAllPossibleAssignmentDicts():
+            prob = 0
+            for eliminationValue in varDomainsDict[eliminationVariable]:
+                assignmentDictCopy = assignmentDict
+                assignmentDictCopy[eliminationVariable] = eliminationValue
+                prob += factor.getProbability(assignmentDictCopy)
+            result.setProbability(assignmentDict, prob)
+
+        return result
+
 
     return eliminate
 
@@ -160,9 +204,7 @@ eliminate = eliminateWithCallTracking()
 def normalize(factor):
     """
     Question 5: Your normalize implementation 
-
     Input factor is a single factor.
-
     The set of conditioned variables for the normalized factor consists 
     of the input factor's conditioned variables as well as any of the 
     input factor's unconditioned variables with exactly one entry in their 
@@ -172,19 +214,15 @@ def normalize(factor):
     This blurs the distinction between evidence assignments and variables 
     with single value domains, but that is alright since we have to assign 
     variables that only have one value in their domain to that single value.
-
     Return a new factor where the sum of the all the probabilities in the table is 1.
     This should be a new factor, not a modification of this factor in place.
-
     If the sum of probabilities in the input factor is 0,
     you should return None.
-
     This is intended to be used at the end of a probabilistic inference query.
     Because of this, all variables that have more than one element in their 
     domain are assumed to be unconditioned.
     There are more general implementations of normalize, but we will only 
     implement this version.
-
     Useful functions:
     Factor.getAllPossibleAssignmentDicts
     Factor.getProbability
@@ -205,5 +243,28 @@ def normalize(factor):
                             str(factor))
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    unCondVar = set()
+    condVar = set()
+    for var in factor.conditionedVariables():
+        if len(variableDomainsDict[var]) > 1:
+            unCondVar.add(var)
+        else:
+            condVar.add(var)
+    for var in factor.unconditionedVariables():
+        if len(variableDomainsDict[var]) > 1:
+            unCondVar.add(var)
+        else:
+            condVar.add(var)
+    result = Factor(unCondVar, condVar, variableDomainsDict)
 
+    probSum = 0
+    for assignmentDict in factor.getAllPossibleAssignmentDicts():
+        probSum += factor.getProbability(assignmentDict)
+    if probSum == 0:
+        return None
+
+    for assignmentDict in result.getAllPossibleAssignmentDicts():
+        ratioPro = factor.getProbability(assignmentDict)/probSum
+        result.setProbability(assignmentDict, ratioPro)
+
+    return result 

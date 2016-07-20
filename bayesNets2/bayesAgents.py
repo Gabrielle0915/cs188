@@ -1,17 +1,3 @@
-# bayesAgents.py
-# --------------
-# Licensing Information:  You are free to use or extend these projects for
-# educational purposes provided that (1) you do not distribute or publish
-# solutions, (2) you retain this notice, and (3) you provide clear
-# attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
-# Attribution Information: The Pacman AI projects were developed at UC Berkeley.
-# The core projects and autograders were primarily created by John DeNero
-# (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
-# Student side autograding was added by Brad Miller, Nick Hay, and
-# Pieter Abbeel (pabbeel@cs.berkeley.edu).
-
-
 import bayesNet as bn
 import game
 from game import Actions, Agent, Directions
@@ -63,26 +49,20 @@ EXPLORE = 2
 def constructBayesNet(gameState):
     """
     Question 1: Bayes net structure
-
     Construct an empty Bayes net according to the structure given in the project
     description.
-
     There are 5 kinds of variables in this Bayes net:
     - a single "x position" variable (controlling the x pos of the houses)
     - a single "y position" variable (controlling the y pos of the houses)
     - a single "food house" variable (containing the house centers)
     - a single "ghost house" variable (containing the house centers)
     - a large number of "observation" variables for each cell Pacman can measure
-
     You *must* name all position and house variables using the constants
     (X_POS_VAR, FOOD_HOUSE_VAR, etc.) at the top of this file. 
-
     The full set of observation variables can be obtained as follows:
-
         for housePos in gameState.getPossibleHouses():
             for obsPos in gameState.getHouseWalls(housePos)
                 obsVar = OBS_VAR_TEMPLATE % obsPos
-
     In this method, you should:
     - populate `obsVars` using the procedure above
     - populate `edges` with every edge in the Bayes Net (a tuple `(from, to)`)
@@ -96,7 +76,6 @@ def constructBayesNet(gameState):
     variableDomainsDict = {}
 
     "*** YOUR CODE HERE ***"
-
     for housePos in gameState.getPossibleHouses():
         for obsPos in gameState.getHouseWalls(housePos):
             obsVars.append(OBS_VAR_TEMPLATE % obsPos)
@@ -135,7 +114,6 @@ def fillXCPT(bayesNet, gameState):
 def fillYCPT(bayesNet, gameState):
     """
     Question 2a: Bayes net probabilities
-
     Fill the CPT that gives the prior probability over the y position variable.
     See the definition of `fillXCPT` above for an example of how to do this.
     You can use the PROB_* constants imported from layout rather than writing
@@ -144,7 +122,15 @@ def fillYCPT(bayesNet, gameState):
 
     yFactor = bn.Factor([Y_POS_VAR], [], bayesNet.variableDomainsDict())
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    from layout import PROB_BOTH_TOP
+    yFactor.setProbability({Y_POS_VAR: BOTH_TOP_VAL}, PROB_BOTH_TOP)
+    from layout import PROB_BOTH_BOTTOM
+    yFactor.setProbability({Y_POS_VAR: BOTH_BOTTOM_VAL}, PROB_BOTH_BOTTOM)
+    from layout import PROB_ONLY_LEFT_TOP
+    yFactor.setProbability({Y_POS_VAR: LEFT_TOP_VAL}, PROB_ONLY_LEFT_TOP)
+    from layout import PROB_ONLY_LEFT_BOTTOM
+    yFactor.setProbability({Y_POS_VAR: LEFT_BOTTOM_VAL}, PROB_ONLY_LEFT_BOTTOM)
+
     bayesNet.setCPT(Y_POS_VAR, yFactor)
 
 def fillHouseCPT(bayesNet, gameState):
@@ -185,18 +171,14 @@ def fillHouseCPT(bayesNet, gameState):
 def fillObsCPT(bayesNet, gameState):
     """
     Question 2b: Bayes net probabilities
-
     Fill the CPT that gives the probability of an observation in each square,
     given the locations of the food and ghost houses. Refer to the project
     description for what this probability table looks like. You can use
     PROB_FOOD_RED and PROB_GHOST_RED from the top of the file.
-
     You will need to create a new factor for *each* of 4*7 = 28 observation
     variables. Don't forget to call bayesNet.setCPT for each factor you create.
-
     The XXXPos variables at the beginning of this method contain the (x, y)
     coordinates of each possible house location.
-
     IMPORTANT:
     Because of the particular choice of probabilities higher up in the Bayes
     net, it will never be the case that the ghost house and the food house are
@@ -209,18 +191,58 @@ def fillObsCPT(bayesNet, gameState):
     bottomLeftPos, topLeftPos, bottomRightPos, topRightPos = gameState.getPossibleHouses()
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    def getValFromPos(pos):
+        width = gameState.data.layout.width
+        height = gameState.data.layout.height
+        x = pos[0]
+        y = pos[1]
+        if x < width/2.0 and y < height/2.0:
+            return BOTTOM_LEFT_VAL
+        elif x < width/2.0 and y > height/2.0:
+            return TOP_LEFT_VAL
+        elif x > width/2.0 and y < height/2.0:
+            return BOTTOM_RIGHT_VAL
+        elif x > width/2.0 and y > height/2.0:
+            return TOP_RIGHT_VAL
+        return None
+
+    for housePos in gameState.getPossibleHouses():
+        for wallPos in gameState.getHouseWalls(housePos):
+            wallVar = OBS_VAR_TEMPLATE % wallPos
+            wallFactor = bn.Factor([wallVar], [FOOD_HOUSE_VAR, GHOST_HOUSE_VAR], bayesNet.variableDomainsDict())
+            for assignmentDict in wallFactor.getAllPossibleAssignmentDicts():
+                probBlue = 0
+                probRed = 0
+                probNone = 0
+                if assignmentDict[FOOD_HOUSE_VAR] == getValFromPos(wallPos):
+                    probRed = PROB_FOOD_RED
+                    probBlue = 1 - PROB_FOOD_RED
+                    probNone = 0
+                elif assignmentDict[GHOST_HOUSE_VAR] == getValFromPos(wallPos):
+                    probRed = PROB_GHOST_RED
+                    probBlue = 1 - PROB_GHOST_RED
+                    probNone = 0
+                else:
+                    probRed = 0
+                    probBlue = 0
+                    probNone = 1
+
+                if assignmentDict[wallVar] == BLUE_OBS_VAL:
+                    wallFactor.setProbability(assignmentDict, probBlue)
+                elif assignmentDict[wallVar] ==RED_OBS_VAL:
+                    wallFactor.setProbability(assignmentDict, probRed)
+                else:
+                    wallFactor.setProbability(assignmentDict, probNone)
+            bayesNet.setCPT(wallVar, wallFactor)
 
 def getMostLikelyFoodHousePosition(evidence, bayesNet, eliminationOrder):
     """
     Question 7: Marginal inference for pacman
-
     Find the most probable position for the food house.
     First, call the variable elimination method you just implemented to obtain
     p(FoodHouse | everything else). Then, inspect the resulting probability
     distribution to find the most probable location of the food house. Return
     this.
-
     (This should be a very short method.)
     """
     "*** YOUR CODE HERE ***"
@@ -311,13 +333,11 @@ class VPIAgent(BayesAgent):
     def computeEnterValues(self, evidence, eliminationOrder):
         """
         Question 8a: Value of perfect information
-
         Given the evidence, compute the value of entering the left and right
         houses immediately. You can do this by obtaining the joint distribution
         over the food and ghost house positions using your inference procedure.
         The reward associated with entering each house is given in the *_REWARD
         variables at the top of the file.
-
         *Do not* take into account the "time elapsed" cost of traveling to each
         of the houses---this is calculated elsewhere in the code.
         """
@@ -376,15 +396,12 @@ class VPIAgent(BayesAgent):
     def computeExploreValue(self, evidence, enterEliminationOrder):
         """
         Question 8b: Value of perfect information
-
         Compute the expected value of first exploring the remaining unseen
         house, and then entering the house with highest expected value.
-
         The method `getExplorationProbsAndOutcomes` returns pairs of the form
         (prob, explorationEvidence), where `evidence` is a new evidence
         dictionary with all of the missing observations filled in, and `prob` is
         the probability of that set of observations occurring.
-
         You can use your implementation of getExplorationProbsAndOutcomes to
         determine the expected value of acting with this extra evidence.
         """
@@ -493,4 +510,3 @@ def combinations(n, r):
     numer = reduce(op.mul, xrange(n, n-r, -1))
     denom = reduce(op.mul, xrange(1, r+1))
     return numer / denom
-
