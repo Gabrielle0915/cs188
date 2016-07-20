@@ -131,7 +131,74 @@ def inferenceByVariableEliminationWithCallTracking(callTrackingList=None):
             eliminationOrder = sorted(list(eliminationVariables))
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        #print("Bayes Net:")
+        #print(bayesNet)
+        #print("query variables:")
+        #print(queryVariables)
+        #print("evidence Dict:")
+        #print(evidenceDict)
+        #print("eliminationOrder:")
+        #print(eliminationOrder)
+
+        domain = dict()
+
+        unconditionedVar = set(queryVariables)
+        conditionedVar = set(evidenceDict.keys())
+        domain = dict(domain, **evidenceDict)
+        bayesNetDomain = bayesNet.variableDomainsDict()
+        for variable in unconditionedVar:
+            domain[variable] = bayesNetDomain[variable]
+
+        #print("domains:")
+        #print(domain)
+
+        currentFactorsList = bayesNet.getAllCPTsWithEvidence(evidenceDict)
+        #print(currentFactorsList)
+
+        eliminateOnlyOneVariable = False
+        keepEliminationOrder = []
+
+        while (len(eliminationOrder) > 0):
+            if (len(eliminationOrder) == 1):
+                
+                currentFactorsNotToJoin, joinedFactors = joinFactorsByVariable(currentFactorsList, eliminationOrder[0])
+                joinedFactors = joinFactors(currentFactorsNotToJoin)
+
+                #Should do something here......According to test4
+
+                
+
+                eliminationOrder =[]
+                
+            else:
+                currentFactorsList, joinedFactors = joinFactorsByVariable(currentFactorsList, eliminationOrder[0])
+                #print("currentFactorsList:")
+                #print(currentFactorsList)
+                #print("joinedFactors:")
+                #print(joinedFactors)
+
+                if (len(joinedFactors.unconditionedVariables()) > 1):
+                    #print("joined factor is:")
+                    #print(joinedFactors)
+                    joinedFactors = eliminate(joinedFactors, eliminationOrder[0])
+                    #print("joined factor is:")
+                    #print(joinedFactors)
+                    currentFactorsList.append(joinedFactors)
+
+                    del eliminationOrder[0]
+                else:
+                    currentFactorsList.append(joinedFactors)
+                    keepEliminationOrder.append(eliminationOrder[0])
+                    del eliminationOrder[0]
+                    #print("currentFactorsList:")
+                    #print(currentFactorsList)
+
+        result = normalize(joinedFactors)
+
+
+        return result
+
+
 
 
     return inferenceByVariableElimination
