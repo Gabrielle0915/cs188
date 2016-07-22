@@ -128,11 +128,6 @@ def joinFactors(factors):
     return result
 
 
-        
-
-
-
-
 
 def eliminateWithCallTracking(callTrackingList=None):
 

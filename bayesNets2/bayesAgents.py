@@ -1,3 +1,17 @@
+# bayesAgents.py
+# --------------
+# Licensing Information:  You are free to use or extend these projects for
+# educational purposes provided that (1) you do not distribute or publish
+# solutions, (2) you retain this notice, and (3) you provide clear
+# attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
+# 
+# Attribution Information: The Pacman AI projects were developed at UC Berkeley.
+# The core projects and autograders were primarily created by John DeNero
+# (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
+# Student side autograding was added by Brad Miller, Nick Hay, and
+# Pieter Abbeel (pabbeel@cs.berkeley.edu).
+
+
 import bayesNet as bn
 import game
 from game import Actions, Agent, Directions
@@ -229,7 +243,7 @@ def fillObsCPT(bayesNet, gameState):
 
                 if assignmentDict[wallVar] == BLUE_OBS_VAL:
                     wallFactor.setProbability(assignmentDict, probBlue)
-                elif assignmentDict[wallVar] ==RED_OBS_VAL:
+                elif assignmentDict[wallVar] == RED_OBS_VAL:
                     wallFactor.setProbability(assignmentDict, probRed)
                 else:
                     wallFactor.setProbability(assignmentDict, probNone)
@@ -246,7 +260,16 @@ def getMostLikelyFoodHousePosition(evidence, bayesNet, eliminationOrder):
     (This should be a very short method.)
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    result = inference.inferenceByVariableElimination(bayesNet, set('foodHouse'), evidence, eliminationOrder)
+    prob = 0
+    for assignmentDict in result.getAllPossibleAssignmentDicts():
+        if prob < result.getProbability(assignmentDict):
+            prob = result.getProbability(assignmentDict)
+            place = assignmentDict
+
+    return place
+
+
 
 
 class BayesAgent(game.Agent):
@@ -346,8 +369,21 @@ class VPIAgent(BayesAgent):
         rightExpectedValue = 0
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        factorCPT = inference.inferenceByVariableElimination(self.bayesNet, [FOOD_HOUSE_VAR, GHOST_HOUSE_VAR], evidence, eliminationOrder)
+        foodTopLeft = {}
+        foodTopLeft.update(evidence)
+        foodTopLeft[FOOD_HOUSE_VAR] = TOP_LEFT_VAL
+        foodTopLeft[GHOST_HOUSE_VAR] = TOP_RIGHT_VAL
 
+        foodTopRight = {}
+        foodTopRight.update(evidence)
+        foodTopRight[FOOD_HOUSE_VAR] = TOP_RIGHT_VAL
+        foodTopRight[GHOST_HOUSE_VAR] = TOP_LEFT_VAL
+        
+        leftExpectedValue = factorCPT.getProbability(foodTopLeft) * WON_GAME_REWARD \
+                            + factorCPT.getProbability(foodTopRight) * GHOST_COLLISION_REWARD
+        rightExpectedValue = factorCPT.getProbability(foodTopLeft) * GHOST_COLLISION_REWARD \
+                             + factorCPT.getProbability(foodTopRight) * WON_GAME_REWARD
         return leftExpectedValue, rightExpectedValue
 
     def getExplorationProbsAndOutcomes(self, evidence):
@@ -409,7 +445,9 @@ class VPIAgent(BayesAgent):
         expectedValue = 0
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        fullEvidence = self.getExplorationProbsAndOutcomes(evidence)
+        for prob, explorationEvidence in fullEvidence:
+            expectedValue += prob * max(self.computeEnterValues(explorationEvidence, enterEliminationOrder))
 
         return expectedValue
 

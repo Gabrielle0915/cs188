@@ -1,17 +1,3 @@
-# inference.py
-# ------------
-# Licensing Information:  You are free to use or extend these projects for
-# educational purposes provided that (1) you do not distribute or publish
-# solutions, (2) you retain this notice, and (3) you provide clear
-# attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
-# Attribution Information: The Pacman AI projects were developed at UC Berkeley.
-# The core projects and autograders were primarily created by John DeNero
-# (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
-# Student side autograding was added by Brad Miller, Nick Hay, and
-# Pieter Abbeel (pabbeel@cs.berkeley.edu).
-
-
 import random
 import util
 from bayesNet import Factor
@@ -23,9 +9,7 @@ def inferenceByEnumeration(bayesNet, queryVariables, evidenceDict):
     An inference by enumeration implementation provided as reference.
     This function performs a probabilistic inference query that
     returns the factor:
-
     P(queryVariables | evidenceDict)
-
     bayesNet:       The Bayes Net on which we are making a query.
     queryVariables: A list of the variables which are unconditioned in
                     the inference query.
@@ -75,32 +59,25 @@ def inferenceByVariableEliminationWithCallTracking(callTrackingList=None):
     def inferenceByVariableElimination(bayesNet, queryVariables, evidenceDict, eliminationOrder):
         """
         Question 6: Your inference by variable elimination implementation
-
         This function should perform a probabilistic inference query that
         returns the factor:
-
         P(queryVariables | evidenceDict)
-
         It should perform inference by interleaving joining on a variable
         and eliminating that variable, in the order of variables according
         to eliminationOrder.  See inferenceByEnumeration for an example on
         how to use these functions.
-
         You need to use joinFactorsByVariable to join all of the factors 
         that contain a variable in order for the autograder to 
         recognize that you performed the correct interleaving of 
         joins and eliminates.
-
         If a factor that you are about to eliminate a variable from has 
         only one unconditioned variable, you should not eliminate it 
         and instead just discard the factor.  This is since the 
         result of the eliminate would be 1 (you marginalize 
         all of the unconditioned variables), but it is not a 
         valid factor.  So this simplifies using the result of eliminate.
-
         The sum of the probabilities should sum to one (so that it is a true 
         conditional probability, conditioned on the evidence).
-
         bayesNet:         The Bayes Net on which we are making a query.
         queryVariables:   A list of the variables which are unconditioned
                           in the inference query.
@@ -108,12 +85,10 @@ def inferenceByVariableEliminationWithCallTracking(callTrackingList=None):
                           variables which are presented as evidence
                           (conditioned) in the inference query. 
         eliminationOrder: The order to eliminate the variables in.
-
         Hint: BayesNet.getAllCPTsWithEvidence will return all the Conditional 
         Probability Tables even if an empty dict (or None) is passed in for 
         evidenceDict. In this case it will not specialize any variable domains 
         in the CPTs.
-
         Useful functions:
         BayesNet.getAllCPTsWithEvidence
         normalize
@@ -131,75 +106,16 @@ def inferenceByVariableEliminationWithCallTracking(callTrackingList=None):
             eliminationOrder = sorted(list(eliminationVariables))
 
         "*** YOUR CODE HERE ***"
-        #print("Bayes Net:")
-        #print(bayesNet)
-        #print("query variables:")
-        #print(queryVariables)
-        #print("evidence Dict:")
-        #print(evidenceDict)
-        #print("eliminationOrder:")
-        #print(eliminationOrder)
-
-        domain = dict()
-
-        unconditionedVar = set(queryVariables)
-        conditionedVar = set(evidenceDict.keys())
-        domain = dict(domain, **evidenceDict)
-        bayesNetDomain = bayesNet.variableDomainsDict()
-        for variable in unconditionedVar:
-            domain[variable] = bayesNetDomain[variable]
-
-        #print("domains:")
-        #print(domain)
-
+        # grab all factors where we know the evidence variables (to reduce the size of the tables)
         currentFactorsList = bayesNet.getAllCPTsWithEvidence(evidenceDict)
-        #print(currentFactorsList)
-
-        eliminateOnlyOneVariable = False
-        keepEliminationOrder = []
-
-        while (len(eliminationOrder) > 0):
-            if (len(eliminationOrder) == 1):
-                
-                currentFactorsNotToJoin, joinedFactors = joinFactorsByVariable(currentFactorsList, eliminationOrder[0])
-                joinedFactors = joinFactors(currentFactorsNotToJoin)
-
-                #Should do something here......According to test4
-
-                
-
-                eliminationOrder =[]
-                
-            else:
-                currentFactorsList, joinedFactors = joinFactorsByVariable(currentFactorsList, eliminationOrder[0])
-                #print("currentFactorsList:")
-                #print(currentFactorsList)
-                #print("joinedFactors:")
-                #print(joinedFactors)
-
-                if (len(joinedFactors.unconditionedVariables()) > 1):
-                    #print("joined factor is:")
-                    #print(joinedFactors)
-                    joinedFactors = eliminate(joinedFactors, eliminationOrder[0])
-                    #print("joined factor is:")
-                    #print(joinedFactors)
-                    currentFactorsList.append(joinedFactors)
-
-                    del eliminationOrder[0]
-                else:
-                    currentFactorsList.append(joinedFactors)
-                    keepEliminationOrder.append(eliminationOrder[0])
-                    del eliminationOrder[0]
-                    #print("currentFactorsList:")
-                    #print(currentFactorsList)
-
-        result = normalize(joinedFactors)
-
-
-        return result
-
-
-
+        # join all factors by variable
+        for joinVariable in eliminationOrder:
+            currentFactorsList, joinedFactor = joinFactorsByVariable(currentFactorsList, joinVariable)
+            if len(joinedFactor.unconditionedVariables()) > 1:
+                eliminateFactor = eliminate(joinedFactor, joinVariable)
+                currentFactorsList.append(eliminateFactor)
+        fullJoint = joinFactors(currentFactorsList)
+        return normalize(fullJoint)
 
     return inferenceByVariableElimination
 
@@ -214,15 +130,12 @@ def sampleFromFactorRandomSource(randomSource=None):
         Sample an assignment for unconditioned variables in factor with
         probability equal to the probability in the row of factor
         corresponding to that assignment.
-
         factor:                 The factor to sample from.
         conditionedAssignments: A dict of assignments for all conditioned
                                 variables in the factor.  Can only be None
                                 if there are no conditioned variables in
                                 factor, otherwise must be nonzero.
-
         Useful for inferenceByLikelihoodWeightingSampling
-
         Returns an assignmentDict that contains the conditionedAssignments but 
         also a random assignment of the unconditioned variables given their 
         probability.
