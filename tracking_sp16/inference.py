@@ -74,9 +74,9 @@ class DiscreteDistribution(dict):
         {}
         """
         "*** YOUR CODE HERE ***"
-        values = self.values()
-        if len(values) != 0 or all(i != 0 for i in values):
-            sumValues = self.total()
+        sumValues = self.total()
+        
+        if sumValues != 0:
             for key in self.keys():
                 self[key] = self[key]/sumValues
 
@@ -177,6 +177,7 @@ class InferenceModule:
         """
         Return the probability P(noisyDistance | pacmanPosition, ghostPosition).
         """
+        "*** YOUR CODE HERE ***"
         if ghostPosition != jailPosition and noisyDistance == None:
             return 0
         if ghostPosition == jailPosition and noisyDistance != None:
@@ -288,6 +289,7 @@ class ExactInference(InferenceModule):
         current position. However, this is not a problem, as Pacman's current
         position is known.
         """
+        self.beliefs.normalize()
         "*** YOUR CODE HERE ***"
         for ghostPosition in self.allPositions:
             self.beliefs[ghostPosition] = self.beliefs[ghostPosition] \
@@ -303,6 +305,23 @@ class ExactInference(InferenceModule):
         current position is known.
         """
         "*** YOUR CODE HERE ***"
+
+        self.beliefs.normalize()
+        newBelief = DiscreteDistribution()
+        newPosDist = DiscreteDistribution()
+        for oldPos in self.allPositions:
+            newPosDist = self.getPositionDistribution(gameState, oldPos)
+            for key in newPosDist:
+                newPosDist[key] = newPosDist[key] * self.beliefs[oldPos]
+                if key in newBelief:
+                    newBelief[key] = newBelief[key] + newPosDist[key]
+                else:
+                    newBelief[key] = newPosDist[key]
+
+        self.beliefs = newBelief
+        self.beliefs.normalize()
+
+
 
     def getBeliefDistribution(self):
         return self.beliefs
