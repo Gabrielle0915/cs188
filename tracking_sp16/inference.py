@@ -18,7 +18,6 @@ import busters
 import game
 
 from util import manhattanDistance
-from operator import mul
 
 
 class DiscreteDistribution(dict):
@@ -519,13 +518,6 @@ class JointParticleFilter(ParticleFilter):
             newParticles.append(tuple(newParticle))
         self.particles = newParticles
 
-
-    def listproduct(listInput):
-        result = 1
-        for x in range(len(listInput)):
-            result *= x
-
-        return result
                         
 
 
