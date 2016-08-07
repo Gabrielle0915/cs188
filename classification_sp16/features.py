@@ -47,14 +47,59 @@ def enhancedFeatureExtractor(datum):
 
     ## DESCRIBE YOUR ENHANCED FEATURES HERE...
 
+    new_features is of length 3
+    first element = 1 if there is one white region; 0 otherwise
+    second element = 1 if there are two separate white regions; 0 otherwise
+    third element = 1 if there are three separate white regions; 0 otherwise
+
     ##
     """
     features = basicFeatureExtractor(datum)
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    original_feature = np.array(features)
+    new_features = np.zeros(3, int)
+    count = 0
 
-    return features
+    for width in range(DIGIT_DATUM_WIDTH):
+        for height in range(DIGIT_DATUM_HEIGHT):
+            if original_feature[DIGIT_DATUM_HEIGHT*width+height] == 0:
+                count += 1
+                dfs(width, height, original_feature)
+
+    if count == 1:
+        new_features[0] = 1
+
+    if count == 2:
+        new_features[1] = 1
+
+    if count == 3:
+        new_features[2] = 1
+
+    return np.append(features, new_features)
+
+
+def dfs(width, height, original_feature):
+  
+    if width+1 < DIGIT_DATUM_WIDTH: 
+        if original_feature[DIGIT_DATUM_HEIGHT*(width+1)+height] == 0:
+            original_feature[DIGIT_DATUM_HEIGHT*(width+1)+height] = 1
+            dfs(width+1, height, original_feature)
+
+    if width-1 >= 0:
+        if original_feature[DIGIT_DATUM_HEIGHT*(width-1)+height] == 0:
+            original_feature[DIGIT_DATUM_HEIGHT*(width-1)+height] = 1
+            dfs(width-1, height, original_feature)
+
+    if height+1 < DIGIT_DATUM_HEIGHT:
+        if original_feature[DIGIT_DATUM_HEIGHT*width+(height+1)] == 0:
+            original_feature[DIGIT_DATUM_HEIGHT*width+(height+1)] = 1
+            dfs(width, height+1, original_feature) 
+
+    if height-1 >= 0:
+        if original_feature[DIGIT_DATUM_HEIGHT*width+(height-1)] == 0:
+            original_feature[DIGIT_DATUM_HEIGHT*width+(height-1)] = 1
+            dfs(width, height-1, original_feature)          
 
 
 def analysis(model, trainData, trainLabels, trainPredictions, valData, valLabels, validationPredictions):
